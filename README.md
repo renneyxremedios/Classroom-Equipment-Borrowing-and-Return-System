@@ -40,7 +40,7 @@ The application runs **locally on one Windows computer** and persists all record
 
 4. When the app opens, it automatically creates any missing tables (`users`, `students`, `equipment`, `borrowings`). On its first launch, it prompts you to create an administrator. You must remember the username/password you choose.
 
-**MySQL connection troubleshooting:** Check that the MySQL service is running, `localhost:3306` is accessible, the schema was applied successfully, and the DB credentials match the MySQL user. If you previously ran the SQL script with the wrong placeholder password, update the MySQL user password in MySQL manually.
+**MySQL connection troubleshooting:** Check that the MySQL service is running, `localhost:3306` is accessible, the schema was applied successfully, and the DB credentials match the MySQL user. If you previously ran the SQL script with the wrong placeholder password, update the MySQL user password in MySQL manually. Foreign-key creation also requires the `REFERENCES` privilege. If you get `REFERENCES command denied`, connect to Workbench as a MySQL administrator and run `GRANT REFERENCES ON classroom_equipment_db.* TO 'equipment_app'@'localhost';`, then restart the Java application. This grant does not delete existing tables or records. Do not commit database passwords into `database/schema.sql`; replace the placeholder locally only when executing the script.
 
 ## Run in Visual Studio Code
 

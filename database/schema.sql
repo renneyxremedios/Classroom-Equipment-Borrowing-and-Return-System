@@ -5,7 +5,7 @@ CREATE DATABASE IF NOT EXISTS classroom_equipment_db
 
 CREATE USER IF NOT EXISTS 'equipment_app'@'localhost'
   IDENTIFIED BY 'CHANGE_ME_TO_A_STRONG_PASSWORD';
-GRANT SELECT, INSERT, UPDATE, DELETE, CREATE, ALTER, INDEX
+GRANT SELECT, INSERT, UPDATE, DELETE, CREATE, ALTER, INDEX, REFERENCES
   ON classroom_equipment_db.* TO 'equipment_app'@'localhost';
 
 USE classroom_equipment_db;
