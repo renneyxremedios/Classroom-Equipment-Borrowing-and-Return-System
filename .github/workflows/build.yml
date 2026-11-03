@@ -1,0 +1,29 @@
+name: Java build and domain smoke tests
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: maven
+      - name: Build Java application
+        run: mvn -B -DskipTests package
+      - name: Compile standalone model smoke test
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force target/test-classes | Out-Null
+          javac -cp target/classes -d target/test-classes src/test/java/edu/cs26/equipment/ModelSmokeTest.java
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Run smoke test
+        shell: pwsh
+        run: |
+          java -cp 'target/classes;target/test-classes' edu.cs26.equipment.ModelSmokeTest
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }

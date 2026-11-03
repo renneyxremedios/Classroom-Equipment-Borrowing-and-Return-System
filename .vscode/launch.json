@@ -1,0 +1,16 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "java",
+      "name": "Classroom Equipment System",
+      "request": "launch",
+      "mainClass": "edu.cs26.equipment.App",
+      "projectName": "classroom-equipment-system",
+      "env": {
+        "DB_URL": "jdbc:mysql://localhost:3306/classroom_equipment_db?connectionTimeZone=LOCAL",
+        "DB_USER": "equipment_app"
+      }
+    }
+  ]
+}

@@ -1,0 +1,15 @@
+# Java build output and local configuration
+target/
+build/
+out/
+*.class
+*.jar
+!mvn/wrapper/maven-wrapper.jar
+lib/
+.env
+.env.*
+!.env.example
+*.log
+.vscode/*.log
+.DS_Store
+Thumbs.db
