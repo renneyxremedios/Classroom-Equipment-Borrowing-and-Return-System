@@ -1,105 +1,158 @@
 # Classroom Equipment Borrowing and Return Management System
 
-A Java Swing desktop application for recording classroom equipment, student borrowers, requisitions, returns, and historical records. Intended for **Software Development Fundamentals** and to demonstrate **Object-Oriented Programming**.
+An offline, single-computer **Java Swing + MySQL** application built for Software Development Fundamentals. It uses object-oriented design to register classroom equipment, manage student borrowers, record equipment loans/returns, and review borrowing history.
 
-![Platform](https://img.shields.io/badge/Java-17%2B-blue) ![UI](https://img.shields.io/badge/UI-Java%20Swing-blue) ![Database](https://img.shields.io/badge/Database-MySQL%208%2B-blue)
+## For teammates: install and run on your own PC
 
-## Features
+Each teammate needs their **own local MySQL server**. GitHub stores **source code**, not your MySQL records. Cloning the repo will not automatically copy another person's database or login account.
 
-- **Secure login:** On first launch, create an administrator account. Later launches require username/password. Passwords use a unique salt and PBKDF2-SHA256 hashing; there is **no default password**.
-- **Dashboard:** Equipment counts, currently borrowed items, overdue items, students, and recent activity.
-- **Equipment masterfile:** Add, edit, delete, search, and categorize individual items as electronic/non-electronic. Items with historical transactions cannot be deleted.
-- **Students masterfile:** Add, edit, delete, and search student ID, name, course, and section. Students with historical transactions cannot be deleted.
-- **Borrow Item:** Record requisition number, student, date/time, due time, and multiple uniquely identified items per transaction.
-- **Return Item:** Mark active loans returned and automatically free those items for the next borrower.
-- **History:** Search all borrowing and return transactions, including overdue status.
+### 1. Install the prerequisites (Windows)
 
-The application runs **locally on one Windows computer** and persists all records in a **MySQL** database (not CSV). A running MySQL server is required; nothing is hosted online.
+- [Java JDK 17 or newer](https://adoptium.net/) (not just the Java runtime)
+- [Visual Studio Code](https://code.visualstudio.com/) plus the **Extension Pack for Java**
+- [MySQL Community Server 8](https://dev.mysql.com/downloads/mysql/) and [MySQL Workbench](https://dev.mysql.com/downloads/workbench/)
+- Git (or download the GitHub project ZIP)
+- Internet on first app launch to download **MySQL Connector/J**
 
-## Requirements
+Confirm Java is installed by running `javac -version` and `java -version` in the VS Code terminal. The JDK must appear in the system PATH. **Maven is optional**; the project includes `run.ps1`.
 
-- Java Development Kit **17 or newer** (Java 23 has been detected on the development PC)
-- MySQL Server **8.0 or newer** installed and running
-- **Visual Studio Code** with *Extension Pack for Java* (recommended)
-- Optional: Maven 3.9+ to resolve dependencies automatically
-- Internet access on first `run.ps1` use to download the official MySQL Connector/J driver
+### 2. Download and open the project
 
-## Database setup (one time)
+In a terminal:
 
-1. Install and start a MySQL 8.x server. In MySQL Workbench or the MySQL shell, open `database/schema.sql`.
-2. **Change** `CHANGE_ME_TO_A_STRONG_PASSWORD` to a strong password before executing that SQL script. It creates the `classroom_equipment_db` database and a least-privilege `equipment_app` user.
-3. Set the following environment variables **in the same terminal** where the program is launched:
-
-   ```powershell
-   $env:DB_URL = 'jdbc:mysql://localhost:3306/classroom_equipment_db?connectionTimeZone=LOCAL'
-   $env:DB_USER = 'equipment_app'
-   $env:DB_PASSWORD = 'YOUR_PASSWORD_FROM_SCHEMA_SQL'
-   ```
-
-   Replace the placeholder password with your actual local database password. **Never commit real credentials.**
-
-4. When the app opens, it automatically creates any missing tables (`users`, `students`, `equipment`, `borrowings`). On its first launch, it prompts you to create an administrator. You must remember the username/password you choose.
-
-**MySQL connection troubleshooting:** Check that the MySQL service is running, `localhost:3306` is accessible, the schema was applied successfully, and the DB credentials match the MySQL user. If you previously ran the SQL script with the wrong placeholder password, update the MySQL user password in MySQL manually. Foreign-key creation also requires the `REFERENCES` privilege. If you get `REFERENCES command denied`, connect to Workbench as a MySQL administrator and run `GRANT REFERENCES ON classroom_equipment_db.* TO 'equipment_app'@'localhost';`, then restart the Java application. This grant does not delete existing tables or records. Do not commit database passwords into `database/schema.sql`; replace the placeholder locally only when executing the script.
-
-## Run in Visual Studio Code
-
-Open the **entire project folder** in Visual Studio Code:
-
-```text
-CS26 Project 2026/
-└── Classroom Equipment Borrowing and Return System/
-    ├── pom.xml
-    ├── database/schema.sql
-    ├── src/main/java/edu/cs26/equipment/
-    └── run.ps1
+```powershell
+git clone https://github.com/renneyxremedios/Classroom-Equipment-Borrowing-and-Return-System.git
+cd Classroom-Equipment-Borrowing-and-Return-System
+code .
 ```
 
-**Option A — Maven:** Run `mvn compile exec:java` in VS Code's terminal (requires Maven). MySQL Connector/J is resolved from Maven Central.
+Alternatively, GitHub **Code → Download ZIP**, extract the entire ZIP, then use **File → Open Folder** in VS Code.
 
-**Option B — Built-in script (no Maven needed):** In VS Code's **PowerShell terminal** run:
+**Open the folder that contains `pom.xml`, `run.ps1`, and `database/`**, not a nested `src` folder.
+
+### 3. Start MySQL and initialize the database in Workbench (once per PC)
+
+1. Ensure the MySQL Server service is **Running**. If it is stopped, open PowerShell **as Administrator** and run `Start-Service MySQL80` (the name may differ by installation).
+2. Open **MySQL Workbench**, connect to your **Local instance MySQL80** (or your own local MySQL connection) with the **root administrator password you set during MySQL installation**.
+3. In Workbench, choose **File → Open SQL Script**, then open **`database/schema.sql`** from the downloaded project.
+4. In the Workbench SQL editor, replace **`CHANGE_ME_TO_A_STRONG_PASSWORD`** with a strong, unique password **you choose for `equipment_app`**. Execute **all** of the SQL script using the lightning-bolt **Execute All** action. This creates:
+   - Database `classroom_equipment_db`
+   - Login `equipment_app`@`localhost`, with the required `REFERENCES` permission
+   - Tables `users`, `students`, `equipment`, and `borrowings`
+5. Check Workbench's **Action Output** for errors. For verification, run:
+   ```sql
+   SHOW DATABASES LIKE 'classroom_equipment_db';
+   USE classroom_equipment_db;
+   SHOW TABLES;
+   ```
+   Expected tables: `users`, `students`, `equipment`, `borrowings`.
+
+**Important:** The password replacement is for the SQL editor on **your PC only**. Do **not** commit or push it to GitHub or send screenshots containing it. You do not need to share the root password or `equipment_app` password with teammates. Each PC uses its own credentials.
+
+**If the `equipment_app` account already exists:** `CREATE USER IF NOT EXISTS` will not change its password. In Workbench, while connected as the administrator, you can run `ALTER USER 'equipment_app'@'localhost' IDENTIFIED BY 'YOUR_OWN_NEW_PASSWORD';` using your intended local password. If you previously got `REFERENCES command denied`, run `GRANT REFERENCES ON classroom_equipment_db.* TO 'equipment_app'@'localhost';`.
+
+### 4. Configure your local app password (once per PC)
+
+In **VS Code → Terminal → New Terminal** (PowerShell), run:
+
+```powershell
+Copy-Item .env.example .env
+```
+
+Open the newly created **`.env`** file in VS Code. Change **only** its `DB_PASSWORD` value to the `equipment_app` password you chose in Step 3.
+
+Example of the format (the password shown is only a placeholder):
+
+```dotenv
+DB_URL=jdbc:mysql://localhost:3306/classroom_equipment_db?connectionTimeZone=LOCAL
+DB_USER=equipment_app
+DB_PASSWORD=REPLACE_WITH_YOUR_MYSQL_PASSWORD
+```
+
+Do not enter `$env:` in this file. It must contain plain `KEY=value` lines. **Never commit `.env`**; it is ignored by Git.
+
+If you already have `DB_PASSWORD` set in your current PowerShell session, that **takes precedence** over the `.env` file. To use the value from `.env`, run `Remove-Item Env:DB_PASSWORD -ErrorAction SilentlyContinue` in the VS Code terminal or open a new terminal.
+
+### 5. Run the desktop app
+
+In the **project-root** PowerShell terminal:
 
 ```powershell
 .\run.ps1
 ```
 
-The script downloads the JDBC driver into ignored `lib/` on its first run, compiles the Java sources with `javac`, then launches the Swing application. If PowerShell restricts scripts, run `powershell -ExecutionPolicy Bypass -File .\run.ps1` in a terminal **only if you trust the checked-in script**.
+The script automatically reads your `.env`, downloads the MySQL JDBC driver the first time, compiles Java source code, and launches the Swing window. **Maven is not needed** for this method.
 
-The included `.vscode/launch.json` can also run the Java main class when the Java extensions, project dependencies, and DB environment variables are configured.
+Alternatively, with the VS Code Java extensions installed, **Run and Debug → Classroom Equipment System** reads the same `.env`.
 
-## How to use
+On the **first launch on each fresh database**, create your app's **administrator username and password**. This app login is **different** from MySQL's root and `equipment_app` passwords. Then sign in.
 
-1. Start MySQL, configure the environment variables, and launch the app.
-2. On first launch **create the administrator**; then sign in.
-3. Add students under **Students**. Add equipment under **Equipment** (example IDs `EQ-001`, `EQ-002`).
-4. Open **Borrow Item**, select a student and one or more available equipment IDs, set the return deadline, and press **Save Borrowing**.
-5. Open **Return Item**, select a borrowing row, and press **Mark Selected as Returned**.
-6. Review records in **Borrowing History** or statistics in **Dashboard**.
+### 6. Check that the program works
 
-### Business rules
+1. Log in to the app.
+2. Go to **Students** and add a test student with an ID.
+3. Go to **Equipment** and add a unique equipment ID (for example `EQ-001`).
+4. Go to **Borrow Item**, select the student and equipment, and save the borrowing.
+5. Go to **Return Item**, select the active borrowing, and mark it returned.
+6. Review **Borrowing History** and **Dashboard**.
 
-- Each physical equipment item has a **unique equipment ID** and quantity **1** per borrowing line.
-- Only **available** equipment may be borrowed; borrowing and return updates are database transactions.
-- A due time **must be later** than the borrowing time.
-- Returns preserve borrowing history instead of deleting transactions.
-- Users can't delete equipment or students that are referenced by borrowing history.
-- Intended for offline/single-user use, not a multi-user distributed deployment.
+**You are done when all six steps work.** If they don't, see Troubleshooting.
 
-## OOP principles demonstrated
+## Common errors
 
-| Principle | Code |
+| Message / symptom | Meaning and fix |
 | --- | --- |
-| **Encapsulation** | `Equipment` stores private immutable attributes behind getters; `Repository` centralizes data access. |
-| **Abstraction** | `Equipment` is an abstract class defining category and handling behavior. |
-| **Inheritance** | `ElectronicEquipment` and `NonElectronicEquipment` inherit from `Equipment`. |
-| **Polymorphism** | Each subclass overrides `handlingInstructions()`; UI invokes the correct implementation. |
+| `Access denied for user 'equipment_app'@'localhost'` | Wrong `DB_PASSWORD`, or the account was not set up. Re-check `.env`; use Workbench as root to `ALTER USER` if needed. |
+| `REFERENCES command denied` | Missing permission needed to create foreign keys. In Workbench as root: `GRANT REFERENCES ON classroom_equipment_db.* TO 'equipment_app'@'localhost';` |
+| `Communications link failure` / `Connection refused` | MySQL service is stopped or listening on a different port. Start MySQL and confirm `localhost:3306`. |
+| `Unknown database 'classroom_equipment_db'` | Execute **all of `database/schema.sql`** in MySQL Workbench as an administrator. |
+| `DB_PASSWORD` missing | Create `.env` from `.env.example` and enter the MySQL **equipment_app** password. |
+| `javac` not recognized | Install **JDK 17+**; restart VS Code and confirm `javac -version`. |
+| PowerShell will not run `run.ps1` | After reviewing the script, launch it with `powershell -ExecutionPolicy Bypass -File .\run.ps1` in the project terminal. |
+| Driver could not be downloaded | Check internet connection for Maven Central or use Maven to manage JDBC dependencies. |
+| Program asks to create an administrator again | You may be connecting to a different or fresh database; verify `DB_URL` and `DB_USER`. |
 
-## Compile and smoke-test without MySQL
+## Tests and builds
 
-Domain checks can be run without a database. From the folder root, compile all Java classes into `build/classes` and run the standalone `ModelSmokeTest` in `src/test/java`. Full database/integration testing requires the MySQL service and schema configured above.
+Test the OOP model **without MySQL**:
 
-## Project scope
+```powershell
+.\run.ps1 -SmokeTest
+```
 
-Subject: **Software Development Fundamentals** · Language: **Java** · IDE: **Visual Studio Code** · UI: **Swing** · Storage: **MySQL** · Architecture: **OOP + JDBC**.
+Compile without launching the application:
 
-Security note: This is an academic desktop application, not a production identity platform. The initial administrator manages the application; staff-account creation and password resets are not yet exposed in the UI.
+```powershell
+.\run.ps1 -CompileOnly
+```
+
+With Maven installed, compile with `mvn compile`, run with `mvn exec:java`, and build with `mvn package`. GitHub Actions automatically compiles the project and runs standalone smoke tests, **not** a real MySQL integration test.
+
+## Features
+
+- **Login and first-run administrator setup** (PBKDF2-SHA256 salted password hashes; no default credentials).
+- **Dashboard** with available/borrowed/overdue counts.
+- **Equipment**: add/edit/delete/search items by ID and name, categorize electronic/non-electronic.
+- **Students**: add/edit/delete/search student IDs, names, courses, and sections.
+- **Borrow Item**: record requisition, student, date/time, return deadline and selected physical equipment.
+- **Return Item**: record returns, release the item back to inventory.
+- **History**: view all transactions including overdue and returned items.
+
+## Object-Oriented Programming principles
+
+| Principle | Demonstration |
+| --- | --- |
+| Encapsulation | `Equipment` has private fields and public getters; data access is managed through `Repository`. |
+| Abstraction | Abstract `Equipment` defines properties and handling rules. |
+| Inheritance | `ElectronicEquipment` and `NonElectronicEquipment` extend `Equipment`. |
+| Polymorphism | Each subclass overrides `handlingInstructions()` and the UI calls the appropriate implementation. |
+
+## Scope and limits
+
+- Java 17+, Java Swing, JDBC, MySQL 8, Visual Studio Code.
+- Offline **single-computer** desktop application, using a local MySQL server.
+- One physical item per unique equipment ID; a borrowing requisition can contain multiple items.
+- Borrowing/returns update data inside MySQL transactions and keep history.
+- Deleting students/equipment with historical transactions is not allowed.
+- No online access, cross-computer synchronized records, staff-account management UI, or password reset interface.
+- Never store real database credentials in code or Git. Rotate any password accidentally exposed in a screenshot or commit.
